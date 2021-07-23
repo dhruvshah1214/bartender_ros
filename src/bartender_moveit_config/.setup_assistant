@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: bartender_description
+    relative_path: urdf/bartender_description.urdf
+    xacro_args: ""
+  SRDF:
+    relative_path: config/bartender_description.srdf
+  CONFIG:
+    author_name: Dhruv Shah
+    author_email: dhruv.shah@gmail.com
+    generated_timestamp: 1626764735

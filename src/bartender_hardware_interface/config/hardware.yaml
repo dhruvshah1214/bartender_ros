@@ -1,0 +1,13 @@
+generic_hw_control_loop:
+  loop_hz: 20
+  cycle_time_error_threshold: 0.01
+  
+hardware_interface:
+  joints:
+    - dof1
+    - dof2
+    - dof3
+    - dof4
+    - dof5
+    - dof6
+

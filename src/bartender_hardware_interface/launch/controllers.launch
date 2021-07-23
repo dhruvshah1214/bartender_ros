@@ -1,0 +1,14 @@
+<launch>
+  <arg name="use_limits" default="false" />
+  
+  <rosparam file="$(find bartender_hardware_interface)/config/hardware.yaml" command="load" ns="/bartender/controller/" />
+  <rosparam file="$(find bartender_hardware_interface)/config/controllers.yaml" command="load" ns="/bartender/hardware/"/>
+  <rosparam file="$(find bartender_hardware_interface)/config/joint_limits.yaml" command="load" if="$(arg use_limits)" />
+
+  <node name="bartender_hw_interface" pkg="bartender_hardware_interface" type="bartender_control_loop" output="screen" />
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/"
+    args="
+        /bartender/controller/state
+        /bartender/controller/position/dof1" />
+
+</launch>

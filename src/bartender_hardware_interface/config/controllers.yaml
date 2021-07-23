@@ -1,0 +1,38 @@
+state:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
+  
+position:
+  dof1:
+    type: position_controllers/JointPositionController
+    joint: dof1
+    pid: {p: 0.0, i: 0.0, d: 0.0}
+  dof2:
+    type: position_controllers/JointPositionController
+    joint: dof2
+    pid: {p: 0.0, i: 0.0, d: 0.0}
+  dof3:
+    type: position_controllers/JointPositionController
+    joint: dof3
+    pid: {p: 0.0, i: 0.0, d: 0.0}
+  dof4:
+    type: position_controllers/JointPositionController
+    joint: dof4
+    pid: {p: 0.0, i: 0.0, d: 0.0}
+  dof5:
+    type: position_controllers/JointPositionController
+    joint: dof5
+    pid: {p: 0.0, i: 0.0, d: 0.0}
+  dof6:
+    type: position_controllers/JointPositionController
+    joint: dof6
+    pid: {p: 0.0, i: 0.0, d: 0.0}  
+  group:
+    type: position_controllers/JointGroupPositionController
+    joints:
+      - dof1
+      - dof2
+      - dof3
+      - dof4
+      - dof5
+      - dof6
