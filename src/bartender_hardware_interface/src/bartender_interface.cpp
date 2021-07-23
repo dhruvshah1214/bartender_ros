@@ -17,55 +17,68 @@ using namespace ctre::phoenix::sensors;
 // const
 const std::string INTERFACE = "can0";
 
-/* actuators */
-TalonSRX dof1Motor(11);
-TalonSRX dof2Motor(12);
-TalonSRX dof3Motor(13);
-TalonSRX dof4Motor(14);
+TalonSRX *dof1MotorPtr;
+TalonSRX *dof2MotorPtr;
+TalonSRX *dof3MotorPtr;
+TalonSRX *dof4MotorPtr;
 
-/* encoders */
-CANCoder dof1Sensor(21);
-CANCoder dof2Sensor(22);
-CANCoder dof3Sensor(23);
+CANCoder *dof1SensorPtr;
+CANCoder *dof2SensorPtr;
+CANCoder *dof3SensorPtr;
 
+  void init_ctre() {
 
-void init_ctre()
-{
-	// talons
-
-	dof1Motor.ConfigFactoryDefault();
-	dof1Motor.SetNeutralMode(motorcontrol::NeutralMode::Brake);	
-	dof1Motor.SetInverted(true);
-	dof1Motor.ConfigRemoteFeedbackFilter(dof1Sensor, 0);
-	dof1Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
-	dof1Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
-	dof1Motor.ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
-	dof1Motor.ConfigPeakOutputForward(0.4);
-	dof1Motor.ConfigPeakOutputReverse(-0.4);
-	dof1Motor.ConfigForwardSoftLimitEnable(true);
-	dof1Motor.ConfigReverseSoftLimitEnable(true);
-	dof1Motor.ConfigForwardSoftLimitThreshold(120.0 * (4096.0/360.0));
-	dof1Motor.ConfigReverseSoftLimitThreshold(-120.0 * (4096.0/360.0));
-  dof1Motor.ConfigClosedLoopPeakOutput(0, 0.3);
-	// dof1Motor.ConfigMotionCruiseVelocity(75.0);
-	// dof1Motor.ConfigMotionAcceleration(225.0);
-	// dof1Motor.ConfigMotionSCurveStrength(4);
-	// dof1Motor.Config_kF(0, 5.115);
-	dof1Motor.Config_kP(0, 2.0);
+    /* actuators */
+    
+    // talons
+    dof1MotorPtr = new TalonSRX(11);
+    dof2MotorPtr = new TalonSRX(12);
+    //TalonSRX dof3Motor(13);
+    //TalonSRX dof4Motor(14);
+  
+    /* encoders */
+    dof1SensorPtr = new CANCoder(21);
+    //CANCoder dof2Sensor(22);
+    //CANCoder dof3Sensor(23);
+  	
+  
+  	dof1MotorPtr->ConfigFactoryDefault();
+  	dof1MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Brake);	
+  	dof1MotorPtr->SetInverted(true);
+  	dof1MotorPtr->ConfigRemoteFeedbackFilter(*dof1SensorPtr, 0);
+  	dof1MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
+  	dof1MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
+  	dof1MotorPtr->ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
+  	dof1MotorPtr->ConfigPeakOutputForward(0.4);
+  	dof1MotorPtr->ConfigPeakOutputReverse(-0.4);
+  	dof1MotorPtr->ConfigForwardSoftLimitEnable(true);
+  	dof1MotorPtr->ConfigReverseSoftLimitEnable(true);
+  	dof1MotorPtr->ConfigForwardSoftLimitThreshold(120.0 * (4096.0/360.0));
+  	dof1MotorPtr->ConfigReverseSoftLimitThreshold(-120.0 * (4096.0/360.0));
+    dof1MotorPtr->ConfigClosedLoopPeakOutput(0, 0.3);
+  	// dof1MotorPtr.ConfigMotionCruiseVelocity(75.0);
+  	// dof1MotorPtr.ConfigMotionAcceleration(225.0);
+  	// dof1MotorPtr.ConfigMotionSCurveStrength(4);
+  	// dof1MotorPtr.Config_kF(0, 5.115);
+  	dof1MotorPtr->Config_kP(0, 2.0);
 
 	
 	
-	// sensors
+  	// sensors
+  	
+  	dof1SensorPtr->ConfigFactoryDefault();
+  	dof1SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
+  	dof1SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
+  	dof1SensorPtr->ConfigMagnetOffset(-145.723);
+  	dof1SensorPtr->ConfigSensorDirection(false);
+  	dof1SensorPtr->SetPositionToAbsolute();
 	
-	dof1Sensor.ConfigFactoryDefault();
-	dof1Sensor.ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
-	dof1Sensor.ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
-	dof1Sensor.ConfigMagnetOffset(0);
-	dof1Sensor.ConfigSensorDirection(false);
-	dof1Sensor.SetPositionToAbsolute();
-}
+  }
 
 namespace bartender_control {
+
+
+
   BartenderHWInterface::BartenderHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model) : ros_control_boilerplate::GenericHWInterface(nh, urdf_model) {
     ROS_INFO_NAMED("bartender_interface", "hw interface ready");
     ctre::phoenix::platform::can::SetCANInterface(INTERFACE.c_str());
@@ -73,12 +86,18 @@ namespace bartender_control {
   }
   
   void BartenderHWInterface::read(ros::Duration& elapsed_time) {
-    joint_position_[0] = dof1Sensor.GetAbsolutePosition();
-    joint_velocity_[0] = dof1Sensor.GetVelocity();
+    // ROS_INFO_NAMED("bartender_interface", "reading position:");
+    joint_position_[0] = dof1SensorPtr->GetAbsolutePosition();
+    //ROS_INFO_NAMED("bartender_interface", std::to_string(joint_position_[0]).c_str());
+    joint_velocity_[0] = dof1SensorPtr->GetVelocity();
   }
   
   void BartenderHWInterface::write(ros::Duration& elapsed_time) {
-    dof1Motor.Set(TalonSRXControlMode::Position, joint_position_command_[0] * (4096.0/360.0));
+    // ROS_INFO_NAMED("bartender_interface", "writing position:");
+    // ROS_INFO_NAMED("bartender_interface", std::to_string(joint_position_command_[0]).c_str());
+    dof1MotorPtr->Set(ControlMode::Position, joint_position_command_[0] * (4096.0/360.0));
+    
+    ctre::phoenix::unmanaged::FeedEnable(1000);
   }
   
   void BartenderHWInterface::enforceLimits(ros::Duration& period) {

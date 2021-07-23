@@ -5,27 +5,27 @@ state:
 position:
   dof1:
     type: position_controllers/JointPositionController
-    joint: dof1
+    joint: Axis_1_joint
     pid: {p: 0.0, i: 0.0, d: 0.0}
   dof2:
     type: position_controllers/JointPositionController
-    joint: dof2
+    joint: Axis_2_joint
     pid: {p: 0.0, i: 0.0, d: 0.0}
   dof3:
     type: position_controllers/JointPositionController
-    joint: dof3
+    joint: Axis_3_joint
     pid: {p: 0.0, i: 0.0, d: 0.0}
   dof4:
     type: position_controllers/JointPositionController
-    joint: dof4
+    joint: Axis_4_joint
     pid: {p: 0.0, i: 0.0, d: 0.0}
   dof5:
     type: position_controllers/JointPositionController
-    joint: dof5
+    joint: Axis_5_joint
     pid: {p: 0.0, i: 0.0, d: 0.0}
   dof6:
     type: position_controllers/JointPositionController
-    joint: dof6
+    joint: Axis_6_joint
     pid: {p: 0.0, i: 0.0, d: 0.0}  
   group:
     type: position_controllers/JointGroupPositionController

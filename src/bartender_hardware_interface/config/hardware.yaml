@@ -4,10 +4,10 @@ generic_hw_control_loop:
   
 hardware_interface:
   joints:
-    - dof1
-    - dof2
-    - dof3
-    - dof4
-    - dof5
-    - dof6
+    - Axis_1_joint
+    - Axis_2_joint
+    - Axis_3_joint
+    - Axis_4_joint
+    - Axis_5_joint
+    - Axis_6_joint
 

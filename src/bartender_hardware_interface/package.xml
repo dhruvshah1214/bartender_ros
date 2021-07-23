@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>sample</name>
+  <name>bartender_hardware_interface</name>
   <version>0.0.0</version>
   <description>The sample package</description>
 
@@ -48,6 +48,7 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
+  <depend>Boost</depend>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>ros_control_boilerplate</build_depend>
   <build_depend>roscpp</build_depend>
@@ -61,7 +62,9 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-
+  <depend>controller_manager</depend>
+  <depend>joint_state_controller</depend>
+  <depend>robot_state_publisher</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

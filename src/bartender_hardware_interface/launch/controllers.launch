@@ -1,14 +1,17 @@
 <launch>
   <arg name="use_limits" default="false" />
   
-  <rosparam file="$(find bartender_hardware_interface)/config/hardware.yaml" command="load" ns="/bartender/controller/" />
-  <rosparam file="$(find bartender_hardware_interface)/config/controllers.yaml" command="load" ns="/bartender/hardware/"/>
+  <rosparam file="$(find bartender_hardware_interface)/config/hardware.yaml" command="load" ns="/bartender/control" />
+  <rosparam file="$(find bartender_hardware_interface)/config/controllers.yaml" command="load" ns="/bartender/control/"/>
   <rosparam file="$(find bartender_hardware_interface)/config/joint_limits.yaml" command="load" if="$(arg use_limits)" />
 
-  <node name="bartender_hw_interface" pkg="bartender_hardware_interface" type="bartender_control_loop" output="screen" />
-  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/"
-    args="
-        /bartender/controller/state
-        /bartender/controller/position/dof1" />
+  <param
+    name="robot_description"
+    textfile="$(find bartender_description)/urdf/bartender_description.urdf" />
+
+
+  <node name="bartender_hardware_node" pkg="bartender_hardware_interface" type="bartender_control_loop" output="screen" ns="/bartender/control" />
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/bartender/control"
+    args="state position/dof1" />
 
 </launch>

@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(sample)
+project(bartender_hardware_interface C CXX)
+
+## Definitions
+set(HW_INTERFACE bartender_interface)
+set(HW_EXEC bartender_control_loop)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
+add_definitions(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -20,6 +25,9 @@ find_package(catkin REQUIRED COMPONENTS
 # find_package(Boost REQUIRED COMPONENTS system)
 
 find_package(Boost REQUIRED)
+
+find_package(Threads REQUIRED)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -107,9 +115,9 @@ find_package(Boost REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES sample
-#  CATKIN_DEPENDS Boost ros_control_boilerplate roscpp rospy std_msgs
+#  CATKIN_DEPENDS ros_control_boilerplate roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -130,7 +138,7 @@ include_directories(
 #   src/${PROJECT_NAME}/sample.cpp
 # )
 
-set(HW_INTERFACE bartender_interface)
+
 add_library(${HW_INTERFACE}
   src/${HW_INTERFACE}.cpp
 )
@@ -144,6 +152,9 @@ add_library(${HW_INTERFACE}
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/sample_node.cpp)
+
+add_executable(${HW_EXEC} src/${HW_EXEC}.cpp)
+add_executable(ctre_enabler src/ctre_enabler.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -162,12 +173,43 @@ add_library(${HW_INTERFACE}
 
 target_link_libraries(${HW_INTERFACE}
   ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  Threads::Threads
 )
+
+target_link_libraries(${HW_INTERFACE} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_Phoenix.a)
+target_link_libraries(${HW_INTERFACE} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCCI.a)
+target_link_libraries(${HW_INTERFACE} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixDiagnostics.a)
+target_link_libraries(${HW_INTERFACE} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixPlatform_socketcan.a)
+target_link_libraries(${HW_INTERFACE} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCanutils.a)
+target_link_libraries(${HW_INTERFACE} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCore.a)
 
 target_link_libraries(${HW_EXEC}
   ${HW_INTERFACE}
   ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  Threads::Threads
 )
+
+target_link_libraries(${HW_EXEC} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_Phoenix.a)
+target_link_libraries(${HW_EXEC} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCCI.a)
+target_link_libraries(${HW_EXEC} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixDiagnostics.a)
+target_link_libraries(${HW_EXEC} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixPlatform_socketcan.a)
+target_link_libraries(${HW_EXEC} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCanutils.a)
+target_link_libraries(${HW_EXEC} ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCore.a)
+
+target_link_libraries(ctre_enabler
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  Threads::Threads
+)
+
+target_link_libraries(ctre_enabler ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_Phoenix.a)
+target_link_libraries(ctre_enabler ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCCI.a)
+target_link_libraries(ctre_enabler ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixDiagnostics.a)
+target_link_libraries(ctre_enabler ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixPlatform_socketcan.a)
+target_link_libraries(ctre_enabler ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCanutils.a)
+target_link_libraries(ctre_enabler ${PROJECT_SOURCE_DIR}/lib/ctre/libCTRE_PhoenixCore.a)
 
 #############
 ## Install ##
@@ -189,6 +231,16 @@ target_link_libraries(${HW_EXEC}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
+install(TARGETS ${HW_EXEC}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS ctre_enabler
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
 # install(TARGETS ${PROJECT_NAME}
@@ -197,12 +249,22 @@ target_link_libraries(${HW_EXEC}
 #   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 # )
 
+install(TARGETS ${HW_INTERFACE}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
+
+install(DIRECTORY include/ctre/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
@@ -210,6 +272,13 @@ target_link_libraries(${HW_EXEC}
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+
+foreach(dir config launch)
+	install(DIRECTORY ${dir}/
+		DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir}
+	)
+endforeach(dir)
+
 
 #############
 ## Testing ##

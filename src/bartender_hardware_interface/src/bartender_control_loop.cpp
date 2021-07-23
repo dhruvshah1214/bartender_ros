@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "bartender_hw_interface");
+  ros::init(argc, argv, "bartender_hardware_node");
   ros::NodeHandle nh;
 
   // NOTE: We run the ROS loop in a separate thread as external calls such
