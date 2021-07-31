@@ -25,9 +25,9 @@ Stepper motor6(STEPS_PER_REV,
   );
 
 // Zero variables
-long zero_DOF4 = 0;
-long zero_DOF5 = 0;
-long zero_DOF6 = 0;
+double zero_DOF4 = 0;
+double zero_DOF5 = 0;
+double zero_DOF6 = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -68,15 +68,15 @@ void loop() {
 
 }
 
-long getPWM(int pin){
+double getPWM(int pin){
   unsigned long duration;
   duration = pulseIn(pin, HIGH);
   return duration;
 }
 
-long getAngleDOF4(){
-  long zero = zero_DOF4;
-  long val = getPWM(PIN_ENC_DOF4)*360.0/4096.0;
+double getAngleDOF4(){
+  double zero = zero_DOF4;
+  double val = getPWM(PIN_ENC_DOF4)*360.0/4096.0;
   if(abs(val - zero) > 180.0){
     if(val > zero){
       return val - (360.0 + zero);
@@ -90,9 +90,9 @@ long getAngleDOF4(){
   }
 }
 
-long getAngleDOF5(){
-  long zero = zero_DOF5;
-  long val = getPWM(PIN_ENC_DOF5)*360.0/4096.0;
+double getAngleDOF5(){
+  double zero = zero_DOF5;
+  double val = getPWM(PIN_ENC_DOF5)*360.0/4096.0;
   if(abs(val - zero) > 90.0){
     if(val > zero){
        val - (360.0 + zero);
@@ -106,9 +106,9 @@ long getAngleDOF5(){
   }
 }
 
-long getAngleDOF6(){
-  long zero = zero_DOF6;
-  long val = getPWM(PIN_ENC_DOF6)*360.0/4096.0;
+double getAngleDOF6(){
+  double zero = zero_DOF6;
+  double val = getPWM(PIN_ENC_DOF6)*360.0/4096.0;
   if(abs(val - zero) > 180.0){
     if(val > zero){
       return val - 360.0 - zero;
