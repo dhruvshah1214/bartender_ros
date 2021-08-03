@@ -1,71 +1,75 @@
-#include <Stepper.h>
+#include <AccelStepper.h>
 
-// constants
-const int STEPS_PER_REV = 200;
+AccelStepper MOT_5(AccelStepper::DRIVER, 12, 13);
+AccelStepper MOT_6(AccelStepper::DRIVER, 27, 14);
+
+//Stepper Maxes
+#define  Stepper_MAX_SPEED 4000
+#define  Stepper_MIN_SPEED 0.1
 
 // pin declarations
-int PIN_ENC_DOF4 = 34;
-int PIN_ENC_DOF5 = 35;
-int PIN_ENC_DOF6 = 32;
-int PINS_MOT_DOF5[4] = {25, 26, 27, 14};
-int PINS_MOT_DOF6[4] = {4, 16, 17, 5};
-
-// motor objects
-Stepper motor5(STEPS_PER_REV, 
-  PINS_MOT_DOF5[0], 
-  PINS_MOT_DOF5[1], 
-  PINS_MOT_DOF5[2], 
-  PINS_MOT_DOF5[3]
-  );
-Stepper motor6(STEPS_PER_REV, 
-  PINS_MOT_DOF6[0], 
-  PINS_MOT_DOF6[1], 
-  PINS_MOT_DOF6[2], 
-  PINS_MOT_DOF6[3]
-  );
+int PIN_ENC_DOF4 = 25;
+int PIN_ENC_DOF5 = 32;
+int PIN_ENC_DOF6 = 33;
 
 // Zero variables
 double zero_DOF4 = 0;
 double zero_DOF5 = 0;
 double zero_DOF6 = 0;
 
+double SPEED_5 = 0;
+double SPEED_6 = 0;
+
+//-----------------
 void setup() {
   Serial.begin(9600);
-
+  //Stepper
+  MOT_5.setMaxSpeed(4000.0);
+  MOT_6.setMaxSpeed(4000.0);
   // encoder pins
   pinMode(PIN_ENC_DOF4, INPUT);
   pinMode(PIN_ENC_DOF5, INPUT);
   pinMode(PIN_ENC_DOF6, INPUT);
-
-  // stepper motor pins
-  for(int pin : PINS_MOT_DOF5) {
-    pinMode(pin, OUTPUT);
-  }
-  for(int pin : PINS_MOT_DOF6) {
-    pinMode(pin, OUTPUT);
-  }
 }
 
+//------------------
 void loop() {
+  MOT_6.setSpeed(SPEED_6);
+  MOT_5.setSpeed(SPEED_5);
+  MOT_6.runSpeed();
+  MOT_5.runSpeed();
   if(Serial.available()){
     char input = Serial.read();
     if(input == '1'){
-      setZeroAll();
-      // motor5.setSpeed(20);
-      // motor5.step(100);
+      setSpeed_6(0.2);
     }
-
-    if(input == '4'){
+    else if(input == '2'){
+      setSpeed_6(0.4);
+    }
+    //Encoder testing
+    if(input == '3'){
+      setZeroAll();
+    }
+    else if(input == '4'){
       Serial.println(getAngleDOF4());
     }
-    if(input == '5'){
+    else if(input == '5'){
       Serial.println(getAngleDOF5());
     }
-    if(input == '6'){
+    else if(input == '6'){
       Serial.println(getAngleDOF6());
     }
+    //Stepper Testing
   }
 
+}
+
+void setSpeed_5(double speed){
+  SPEED_5 = speed*Stepper_MAX_SPEED;
+}
+
+void setSpeed_6(double speed){
+  SPEED_6 = speed*Stepper_MAX_SPEED;
 }
 
 double getPWM(int pin){
@@ -138,8 +142,4 @@ void setZeroDOF5(){
 
 void setZeroDOF6(){
   zero_DOF6 = getPWM(PIN_ENC_DOF6)*360.0/4096.0;
-}
-
-void runStepper(long speed, long rotations){
-
 }
