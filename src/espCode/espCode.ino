@@ -44,7 +44,7 @@ void loop() {
       setSpeed_6(0.2);
     }
     else if(input == '2'){
-      setSpeed_6(0.4);
+      setSpeed_5(-0.05);
     }
     //Encoder testing
     if(input == '3'){
@@ -83,7 +83,7 @@ double getAngleDOF4(){
   double val = getPWM(PIN_ENC_DOF4)*360.0/4096.0;
   if(abs(val - zero) > 180.0){
     if(val > zero){
-      return val - (360.0 + zero);
+      return val - 360.0 - zero;
     }
     else{
       return val + 360.0 - zero;
@@ -95,18 +95,19 @@ double getAngleDOF4(){
 }
 
 double getAngleDOF5(){
+  double ratio = 20.0/36.0;
   double zero = zero_DOF5;
   double val = getPWM(PIN_ENC_DOF5)*360.0/4096.0;
-  if(abs(val - zero) > 90.0){
+  if(abs(val - zero) > 180.0){
     if(val > zero){
-       val - (360.0 + zero);
+       return (val - 360.0 - zero)*ratio;
     }
     else{
-       val + 360.0 - zero;
+       return (val + 360.0 - zero)*ratio;
     }
   }
   else {
-    return long(val - zero);
+    return (val - zero)*ratio;
   }
 }
 
