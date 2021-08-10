@@ -8,10 +8,28 @@ AccelStepper stepper6(AccelStepper::DRIVER, 33, 25);
 
 // ------------- CONSTANTS -----------
 // stepper const
-#define  STEPPER_MAX_SPEED 6000
-#define  Stepper_MIN_SPEED 0.1
+#define STEPPER_MAX_SPEED 8000
+#define Stepper_MIN_SPEED 0.1
 // CAN const
-#define  CAN_BITRATE 1000000
+#define CAN_BITRATE 1000000
+
+// LOGGING - setting these flags to 1 will write the corresponding logs
+#define LOG_ENCODER_4 0
+#define LOG_ENCODER_5 0
+#define LOG_ENCODER_6 1
+#define LOG_CAN_WRITE_4 0
+#define LOG_CAN_WRITE_5 0
+#define LOG_CAN_WRITE_6 0
+#define LOG_CAN_HAS_DATA 1
+#define LOG_CAN_DATA 1
+#define LOG_CAN_READ_4 0
+#define LOG_CAN_READ_5 0
+#define LOG_CAN_READ_6 1
+
+#define LOG_ACTUAL_COMMANDED_SPEED_4 0
+#define LOG_ACTUAL_COMMANDED_SPEED_5 0
+#define LOG_ACTUAL_COMMANDED_SPEED_6 1
+
 
 // ----------- pin declarations ---------------------
 // CAN
@@ -28,20 +46,26 @@ int PIN_ENABLE_DOF5 = 26;
 
 // ----------- zero locations -------------------------
 // Zero variables
-double zero_DOF4 = 0;
-double zero_DOF5 = 0;
-double zero_DOF6 = 0;
+double ZERO_DOF4 = -149.15;
+double ZERO_DOF5 = 210.23;
+double ZERO_DOF6 = 59.24;
 
 // ----------- state variables ------------------------
-double SPEED_4 = 0;
-double SPEED_5 = 0;
-double SPEED_6 = 0;
+double targetPWM4 = 0;
+double targetPWM5 = 0;
+double targetPWM6 = 0;
 
 // ---------- CAN frame IDs ---------------------------
-const int CAN_STATUS_ID    = 0x1F0;
-const int CAN_ENC_4_ID     = 0x1F1;
-const int CAN_ENC_5_ID     = 0x1F2;
-const int CAN_ENC_6_ID     = 0x1F3;
+const int CAN_STATUS_ID      = 0x1F0;
+const int CAN_ENC_4_ID       = 0x1F1;
+const int CAN_ENC_5_ID       = 0x1F2;
+const int CAN_ENC_6_ID       = 0x1F3;
+const int CAN_SET_4_ID       = 0x1F4;
+const int CAN_SET_5_ID       = 0x1F5;
+const int CAN_SET_6_ID       = 0x1F6;
+const int CAN_ENABLE_5_ID    = 0x1F7;
+const int CAN_ENABLE_6_ID    = 0x1F8;
+const int CAN_DISABLE_ID     = 0x1F9;
 
 
 //-----------------
@@ -56,8 +80,8 @@ void setup() {
       Serial.println("Starting CAN failed!");
     }
   }
-  CAN.onReceive(onReceiveCAN);
-
+  CAN.filter(0x1F0, 0x7F0);
+//  CAN.onReceive(onReceiveCAN);
 
   // configure servo
   servo4.attach(PIN_SERVO_DOF4);
@@ -67,22 +91,12 @@ void setup() {
   stepper6.setMaxSpeed(STEPPER_MAX_SPEED);
   // enable pin stepper 5
   pinMode(PIN_ENABLE_DOF5, OUTPUT);
-  digitalWrite(PIN_ENABLE_DOF5, HIGH);
+  disableDOF5();
   
   // encoder pins
   pinMode(PIN_ENC_DOF4, INPUT);
   pinMode(PIN_ENC_DOF5, INPUT);
   pinMode(PIN_ENC_DOF6, INPUT);
-
-  // init encoder zeros
-  zero_DOF4 = 0.0;
-  zero_DOF5 = 254.71;
-  zero_DOF6 = 15.12;
-  
-// init state
-//  setSpeed_4(0.0);
-//  setSpeed_5(0.0);
-//  setSpeed_6(0.0);
 }
 
 //------------------
@@ -91,147 +105,189 @@ void loop() {
 
   // send dof4 angle
   float dof4Angle = (float) getAngleDOF4();
-  Serial.println(dof4Angle);
+  if(LOG_ENCODER_4) {
+    Serial.println(dof4Angle);
+  }
   CAN.beginPacket(CAN_ENC_4_ID);
   int written4 = CAN.write((byte*) &dof4Angle, sizeof(dof4Angle));
   int success4 = CAN.endPacket();
-//  Serial.printf("wrote %d bytes to CAN dof4 with success %d \n", written4, success4); 
+  if(LOG_CAN_WRITE_4) {
+    Serial.printf("wrote %d bytes to CAN dof4 with success %d \n", written4, success4); 
+  }
 
   // send dof5 angle
   float dof5Angle = (float) getAngleDOF5();
-//  Serial.println(dof5Angle);
+  if(LOG_ENCODER_5) {
+    Serial.println(dof5Angle);
+  }
   CAN.beginPacket(CAN_ENC_5_ID);
   int written5 = CAN.write((byte*) &dof5Angle, sizeof(dof5Angle));
   int success5 = CAN.endPacket();
-//  Serial.printf("wrote %d bytes to CAN dof5 with success %d \n", written5, success5); 
-
+  if(LOG_CAN_WRITE_5) {
+    Serial.printf("wrote %d bytes to CAN dof5 with success %d \n", written5, success5); 
+  }
+  
   // send dof6 angle
   float dof6Angle = (float) getAngleDOF6();
-//  Serial.println(dof6Angle);
+  if(LOG_ENCODER_6) {
+    Serial.println(dof6Angle);
+  }
   CAN.beginPacket(CAN_ENC_6_ID);
   int written6 = CAN.write((byte*) &dof6Angle, sizeof(dof6Angle));
   int success6 = CAN.endPacket();
-//  Serial.printf("wrote %d bytes to CAN dof6 with success %d \n", written6, success6); 
+  if(LOG_CAN_WRITE_6) {
+    Serial.printf("wrote %d bytes to CAN dof6 with success %d \n", written6, success6); 
+  }
 
-  
-//  MOT_4.write(SPEED_4);
-//  MOT_6.setSpeed(SPEED_6);
-//  MOT_5.setSpeed(SPEED_5);
-//  MOT_6.runSpeed();
-//  MOT_5.runSpeed();
-//  if(Serial.available()){
-//    char input = Serial.read();
-//    if(input == '1'){
-//      setSpeed_4(0.2);
-//    }
-//    else if(input == '2'){
-//      setSpeed_4(-0.05);
-//    }
-//    //Encoder testing
-//    if(input == '3'){
-//      setZeroAll();
-//    }
-//    else if(input == '4'){
-//      Serial.println(getAngleDOF4());
-//    }
-//    else if(input == '5'){
-//      Serial.println(getAngleDOF5());
-//    }
-//    else if(input == '6'){
-//      Serial.println(getAngleDOF6());
-//    }
-//    //Stepper Testing
-//  }
+  // read CAN bus for incoming msgs
+  onReceiveCAN(CAN.parsePacket());
 
+  // motion constraints
+  double actuated4 = targetPWM4;
+  double actuated5 = targetPWM5;
+  double actuated6 = targetPWM6;
+
+  if (dof4Angle > 175.0) {
+    actuated4 = constrain(actuated4, -1.0, 0.0);
+  } else if (dof4Angle < -175.0) {
+    actuated4 = constrain(actuated4, 0.0, 1.0);
+  }
+
+  if (dof5Angle > 90) {
+    actuated5 = constrain(actuated5, -1.0, 0.0);
+  } else if (dof5Angle < -90.0) {
+    actuated5 = constrain(actuated5, 0.0, 1.0);
+  }
+
+  if (dof6Angle > 175.0) {
+    actuated6 = constrain(actuated6, -1.0, 0.0);
+  } else if (dof5Angle < -175.0) {
+    actuated6 = constrain(actuated6, 0.0, 1.0);
+  }
+
+  // write outputs to actuators
+  if (LOG_ACTUAL_COMMANDED_SPEED_4) {
+    Serial.printf("actuating dof 4: pwm speed %.02f\n", actuated4);
+  }
+  if (LOG_ACTUAL_COMMANDED_SPEED_5) {
+    Serial.printf("actuating dof 5: pwm speed %.02f\n", actuated5);
+  }
+  if (LOG_ACTUAL_COMMANDED_SPEED_6) {
+    Serial.printf("actuating dof 6: pwm speed %.02f\n", actuated6);
+  }
+
+  run4(actuated4);
+  run5(actuated5);
+  run6(actuated6);
 }
 
 void onReceiveCAN(int packetSize) {
-  Serial.printf("received packet size %i \n", packetSize);
-}
-
-void setSpeed_4(double speed){
-  SPEED_4 = (speed*90) + 90;
-}
-
-void setSpeed_5(double speed){
-  SPEED_5 = speed*STEPPER_MAX_SPEED;
-}
-
-void setSpeed_6(double speed){
-  SPEED_6 = speed*STEPPER_MAX_SPEED;
-}
-
-double getPWM(int pin){
-  unsigned long duration;
-  duration = pulseIn(pin, HIGH);
-  return duration;
-}
-
-double getAngleDOF4(){
-  double zero = zero_DOF4;
-  double val = getPWM(PIN_ENC_DOF4)*360.0/4096.0;
-  if(abs(val - zero) > 180.0){
-    if(val > zero){
-      return val - 360.0 - zero;
-    }
-    else{
-      return val + 360.0 - zero;
-    }
+  if(packetSize == 0) {
+    return;
   }
-  else {
-    return val - zero;
+  if(LOG_CAN_HAS_DATA) {
+    Serial.printf("received packet size %d \n", packetSize);
   }
-}
+    
+  long packetID = CAN.packetId();
+  int command = packetID & 0xF;
+  
+  int availableBytes = CAN.available();
+  if(LOG_CAN_HAS_DATA) {
+    Serial.printf("CAN -- ID is %04x, command is %02x\n", packetID, command);
+    Serial.printf("CAN -- %d bytes available \n", availableBytes);
+  }
+    
+  byte *canData = new byte[availableBytes];
+  CAN.readBytes(canData, availableBytes);
 
-double getAngleDOF5(){
-  double ratio = 20.0/36.0;
-  double zero = zero_DOF5;
-  double val = getPWM(PIN_ENC_DOF5)*360.0/4096.0;
-  if(abs(val - zero) > 180.0){
-    if(val > zero){
-       return (val - 360.0 - zero)*ratio;
+  if(LOG_CAN_DATA) {
+    Serial.printf("CAN -- data: %d -- ", sizeof(canData));
+    for(int i = 0; i < availableBytes; i++) {
+      byte b = *(canData + i);
+      Serial.printf("%02X", b);
     }
-    else{
-       return (val + 360.0 - zero)*ratio;
+    Serial.printf("\n");
+  }
+  
+  switch(command) {
+    case 0:
+      break;
+    case 4:
+    {
+      // command pwm speed dof 4
+      float commandPWM4 = *((float*) canData);
+      if(LOG_CAN_READ_4) {
+        Serial.printf("received dof 4 speed command: %.04f\n", commandPWM4);
+      }
+      if (abs(commandPWM4) <= 1.0) {
+        targetPWM4 = (double) commandPWM4;
+      }
+      else {
+        Serial.printf("received out-of-range CAN command dof 4: %.02f\n", commandPWM4);
+      }
+      break;
     }
-  }
-  else {
-    return (val - zero)*ratio;
-  }
-}
-
-double getAngleDOF6(){
-  double zero = zero_DOF6;
-  double val = getPWM(PIN_ENC_DOF6)*360.0/4096.0;
-  if(abs(val - zero) > 180.0){
-    if(val > zero){
-      return val - 360.0 - zero;
+    case 5:
+    {
+      // command pwm speed dof 5
+      float commandPWM5 = *((float*) canData);
+      if(LOG_CAN_READ_5) {
+        Serial.printf("received dof 5 speed command: %.04f\n", commandPWM5);
+      }
+      if (abs(commandPWM5) <= 1.0) {
+        targetPWM5 = (double) commandPWM5;
+      }
+      else {
+        Serial.printf("received out-of-range CAN command dof 5: %.02f\n", commandPWM5);
+      }
+      if (abs(commandPWM5) > 0.0) {
+        enableDOF5();
+      }
+      break;
     }
-    else{
-      return val + 360.0 - zero;
+    case 6:
+    {
+      // command pwm speed dof 6
+      float commandPWM6 = *((float*) canData);
+      if (abs(commandPWM6) <= 1.0) {
+        targetPWM6 = (double) commandPWM6;
+      }
+      else {
+        Serial.printf("received out-of-range CAN command dof 6: %.02f\n", commandPWM6);
+      }
+      break;
     }
+    case 7:
+      // enable stepper dof 5
+      break;
+    case 8:
+      // enable stepper dof 6
+      break;
+    case 9:
+      // disable / neutralize robot
+      break;
   }
-  else {
-    return val - zero;
-  }
+  delete [] canData;
 }
 
-void setZeroAll(){
-  setZeroDOF4();
-  setZeroDOF5();
-  setZeroDOF6();
+// -----------------  setters // actuators  -------------------------
+
+void run4(double pwmSpeed){
+  int sp = (int) ((pwmSpeed*90.0) + 90.0);
+  servo4.write(sp);
 }
 
-void setZeroDOF4(){
-  zero_DOF4 = getPWM(PIN_ENC_DOF4)*360.0/4096.0;
+void run5(double pwmSpeed){
+  double sp = pwmSpeed*STEPPER_MAX_SPEED;
+  stepper5.setSpeed(sp);
+  stepper5.runSpeed();
 }
 
-void setZeroDOF5(){
-  zero_DOF5 = getPWM(PIN_ENC_DOF5)*360.0/4096.0;
-}
-
-void setZeroDOF6(){
-  zero_DOF6 = getPWM(PIN_ENC_DOF6)*360.0/4096.0;
+void run6(double pwmSpeed){
+  double sp = pwmSpeed*STEPPER_MAX_SPEED;
+  stepper6.setSpeed(sp);
+  stepper6.runSpeed();
 }
 
 void disableDOF5() {
@@ -240,4 +296,70 @@ void disableDOF5() {
 
 void enableDOF5() {
   digitalWrite(PIN_ENABLE_DOF5, LOW);
+}
+
+// ---------------  getters // encoders -----------------
+
+double getAngleDOF4(){
+  double val = getRawAngle(PIN_ENC_DOF4);
+  return getNeg180To180(val, ZERO_DOF4);
+}
+
+double getAngleDOF5(){
+  double DOF5_ENC_SHAFT_GEARING = 20.0/36.0;
+  double val = getGearedAngle(PIN_ENC_DOF5, DOF5_ENC_SHAFT_GEARING);
+  return getGearedPlusMinusAngle(val, ZERO_DOF5, DOF5_ENC_SHAFT_GEARING);
+}
+
+double getAngleDOF6(){
+  double val = getRawAngle(PIN_ENC_DOF6);
+  return getNeg180To180(val, ZERO_DOF6);
+}
+
+// -------------------   utils   ------------------------
+
+double getPWM(int pin){
+  unsigned long duration;
+  duration = pulseIn(pin, HIGH);
+  return duration;
+}
+
+double getRawAngle(int pin) {
+   double val = getPWM(pin)*360.0/4096.0;
+   return val;
+}
+
+double getGearedAngle(int pin, double ratio) {
+   double val = getPWM(pin)*360.0/4096.0*ratio;
+   return val;
+}
+
+double getNeg180To180(double rawAngle, double zero) {
+  if(abs(rawAngle - zero) > 180.0){
+    if(rawAngle > zero){
+      return rawAngle - 360.0 - zero;
+    }
+    else{
+      return rawAngle + 360.0 - zero;
+    }
+  }
+  else {
+    return rawAngle - zero;
+  }
+}
+
+double getGearedPlusMinusAngle(double gearedAngle, double zero, double ratio) {
+  double baseline = 360.0 * ratio;
+  zero = zero * ratio;
+  if(abs(gearedAngle - zero) > baseline/2.0){
+    if(gearedAngle > zero){
+      return gearedAngle - baseline - zero;
+    }
+    else{
+      return gearedAngle + baseline - zero;
+    }
+  }
+  else {
+    return gearedAngle - zero;
+  }
 }
