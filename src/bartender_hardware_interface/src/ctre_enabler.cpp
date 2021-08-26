@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "ctre_enabler");
   
   ros::NodeHandle nh;
-  ros::Rate loop_rate(50);
+  ros::Rate loop_rate(10);
   
   while(ros::ok()) {
     ctre::phoenix::unmanaged::FeedEnable(1000);

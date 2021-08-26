@@ -127,7 +127,7 @@ void init()
 	dof1Sensor.ConfigFactoryDefault();
 	dof1Sensor.ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
 	dof1Sensor.ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
-	dof1Sensor.ConfigMagnetOffset(-144.316);
+	dof1Sensor.ConfigMagnetOffset(-57);
 	dof1Sensor.ConfigSensorDirection(false);
 	dof1Sensor.SetPositionToAbsolute();
 

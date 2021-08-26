@@ -26,54 +26,131 @@ CANCoder *dof1SensorPtr;
 CANCoder *dof2SensorPtr;
 CANCoder *dof3SensorPtr;
 
-  void init_ctre() {
+// control constants
 
-    /* actuators */
+double kS2 = 0.0;
+double kS3 = 0.0;
+double kG2 = 0.0;
+double kG3 = 0.0;
+
+// util
+
+#define d2r(degrees) degrees * M_PI / 180.0
+#define r2d(rad) rad * 180.0 / M_PI
+
+ void init_ctre() {
+
+  /* actuators */
     
-    // talons
-    dof1MotorPtr = new TalonSRX(11);
-    dof2MotorPtr = new TalonSRX(12);
-    //TalonSRX dof3Motor(13);
-    //TalonSRX dof4Motor(14);
+  // talons
+  dof1MotorPtr = new TalonSRX(11);
+  dof2MotorPtr = new TalonSRX(12);
+  dof3MotorPtr = new TalonSRX(13);
   
     /* encoders */
     dof1SensorPtr = new CANCoder(21);
-    //CANCoder dof2Sensor(22);
-    //CANCoder dof3Sensor(23);
+    dof2SensorPtr = new CANCoder(22);
+    dof3SensorPtr = new CANCoder(23);
   	
   
   	dof1MotorPtr->ConfigFactoryDefault();
-  	dof1MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Brake);	
+  	dof1MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Coast);	
   	dof1MotorPtr->SetInverted(true);
   	dof1MotorPtr->ConfigRemoteFeedbackFilter(*dof1SensorPtr, 0);
   	dof1MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
   	dof1MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
   	dof1MotorPtr->ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
+  	dof1MotorPtr->ConfigNeutralDeadband(0.01);
   	dof1MotorPtr->ConfigPeakOutputForward(0.4);
   	dof1MotorPtr->ConfigPeakOutputReverse(-0.4);
   	dof1MotorPtr->ConfigForwardSoftLimitEnable(true);
   	dof1MotorPtr->ConfigReverseSoftLimitEnable(true);
   	dof1MotorPtr->ConfigForwardSoftLimitThreshold(120.0 * (4096.0/360.0));
   	dof1MotorPtr->ConfigReverseSoftLimitThreshold(-120.0 * (4096.0/360.0));
-    dof1MotorPtr->ConfigClosedLoopPeakOutput(0, 0.3);
-  	// dof1MotorPtr.ConfigMotionCruiseVelocity(75.0);
-  	// dof1MotorPtr.ConfigMotionAcceleration(225.0);
-  	// dof1MotorPtr.ConfigMotionSCurveStrength(4);
-  	// dof1MotorPtr.Config_kF(0, 5.115);
-  	dof1MotorPtr->Config_kP(0, 2.0);
+  	dof1MotorPtr->ConfigClosedloopRamp(0.3);
+  	dof1MotorPtr->ConfigAllowableClosedloopError(0, 7);
+  	dof1MotorPtr->Config_kP(0, 0.5);
+  	dof1MotorPtr->Config_kD(0, 0.5);
+  	dof1MotorPtr->Config_kI(0, 0.003);
+  	dof1MotorPtr->Config_IntegralZone(0, 50.0);
+  	dof1MotorPtr->ConfigMaxIntegralAccumulator(0, 10000.0);
 
-	
+  	
+  dof2MotorPtr->ConfigFactoryDefault();
+  dof2MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Brake);	
+  dof2MotorPtr->SetInverted(false);
+  	dof2MotorPtr->ConfigRemoteFeedbackFilter(*dof2SensorPtr, 0);
+  dof2MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Sum0, FeedbackDevice::RemoteSensor0);
+  dof2MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Sum1, FeedbackDevice::None);
+  	dof2MotorPtr->ConfigSelectedFeedbackSensor(FeedbackDevice::SensorSum, 0);
+  dof2MotorPtr->ConfigNeutralDeadband(0.01);
+  dof2MotorPtr->ConfigPeakOutputForward(0.7);
+  dof2MotorPtr->ConfigPeakOutputReverse(-0.7);
+  dof2MotorPtr->ConfigForwardSoftLimitEnable(true);
+  	dof2MotorPtr->ConfigReverseSoftLimitEnable(true);
+  	dof2MotorPtr->ConfigForwardSoftLimitThreshold(45.0 * (4096.0/360.0));
+  	dof2MotorPtr->ConfigReverseSoftLimitThreshold(-45.0 * (4096.0/360.0));
+  	dof2MotorPtr->ConfigClosedloopRamp(0.8);
+  	dof2MotorPtr->ConfigAllowableClosedloopError(0, 7);
+  dof2MotorPtr->Config_kP(0, 1.5);
+  dof2MotorPtr->Config_kD(0, 4.0);
+ 	dof2MotorPtr->Config_kI(0, 0.01);
+ 	dof2MotorPtr->Config_IntegralZone(0, 100.0);
+ 	dof2MotorPtr->ConfigMaxIntegralAccumulator(0, 20000.0);
+
+    dof3MotorPtr->ConfigFactoryDefault();
+  	dof3MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Brake);	
+ 	dof3MotorPtr->SetInverted(true);
+ 	dof3MotorPtr->ConfigRemoteFeedbackFilter(*dof3SensorPtr, 0);
+ 	dof3MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
+ 	dof3MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
+ 	dof3MotorPtr->ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
+  	dof3MotorPtr->ConfigNeutralDeadband(0.01);
+  	dof3MotorPtr->ConfigPeakOutputForward(0.6);
+  	dof3MotorPtr->ConfigPeakOutputReverse(-0.6);
+  	dof3MotorPtr->ConfigForwardSoftLimitEnable(true);
+  	dof3MotorPtr->ConfigReverseSoftLimitEnable(true);
+  	dof3MotorPtr->ConfigForwardSoftLimitThreshold(150.0 * (4096.0/360.0));
+  	dof3MotorPtr->ConfigReverseSoftLimitThreshold(60.0 * (4096.0/360.0));
+  	dof3MotorPtr->ConfigClosedloopRamp(0.35);
+  	dof3MotorPtr->ConfigAllowableClosedloopError(0, 10.0);
+  	dof3MotorPtr->Config_kP(0, 1.5);
+  	dof3MotorPtr->Config_kD(0, 4.0);
+  	dof3MotorPtr->Config_kI(0, 0.01);
+  	dof3MotorPtr->Config_IntegralZone(0, 250.0);
+  	dof3MotorPtr->ConfigMaxIntegralAccumulator(0, 20000.0);
 	
   	// sensors
   	
-  	dof1SensorPtr->ConfigFactoryDefault();
-  	dof1SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
-  	dof1SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
-  	dof1SensorPtr->ConfigMagnetOffset(-145.723);
-  	dof1SensorPtr->ConfigSensorDirection(false);
-  	dof1SensorPtr->SetPositionToAbsolute();
+  dof1SensorPtr->ConfigFactoryDefault();
+  dof1SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
+  dof1SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
+  dof1SensorPtr->ConfigMagnetOffset(-57.216);
+  dof1SensorPtr->ConfigSensorDirection(false);
+  dof1SensorPtr->SetPositionToAbsolute();
+  	
+  dof2SensorPtr->ConfigFactoryDefault();
+  dof2SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
+	dof2SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
+	dof2SensorPtr->ConfigMagnetOffset(184.482);
+	dof2SensorPtr->ConfigSensorDirection(true);
+	dof2SensorPtr->SetPositionToAbsolute();
+
+	dof3SensorPtr->ConfigFactoryDefault();
+	dof3SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
+	dof3SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
+	dof3SensorPtr->ConfigMagnetOffset(-25.3);
+	dof3SensorPtr->ConfigSensorDirection(false);
+  dof3SensorPtr->SetPositionToAbsolute();
 	
-  }
+}
+
+void neutral() {
+  dof1MotorPtr->NeutralOutput();
+  dof2MotorPtr->NeutralOutput();  
+  dof3MotorPtr->NeutralOutput();
+  dof4MotorPtr->NeutralOutput();
+}
 
 namespace bartender_control {
 
@@ -83,21 +160,44 @@ namespace bartender_control {
     ROS_INFO_NAMED("bartender_interface", "hw interface ready");
     ctre::phoenix::platform::can::SetCANInterface(INTERFACE.c_str());
     init_ctre();
+    
+    kS3 = 0.04;
+    kG3 = 0.05;
+    kS2 = 0.02;
+    kG2 = 0.20;
+    
+    joint_position_command_[0] = 0.0;
+    joint_position_command_[1] = 0.0;
+    joint_position_command_[2] = 60.0;
+    
+    ros::ServiceServer service = *nh.advertiseService("neutral_output", neutral);
   }
   
   void BartenderHWInterface::read(ros::Duration& elapsed_time) {
     // ROS_INFO_NAMED("bartender_interface", "reading position:");
-    joint_position_[0] = dof1SensorPtr->GetAbsolutePosition();
+    joint_position_[0] = dof1SensorPtr->GetPosition();
     //ROS_INFO_NAMED("bartender_interface", std::to_string(joint_position_[0]).c_str());
     joint_velocity_[0] = dof1SensorPtr->GetVelocity();
+    
+    joint_position_[1] = dof2SensorPtr->GetPosition();
+    joint_velocity_[1] = dof2SensorPtr->GetVelocity();
+    
+    joint_position_[2] = dof3SensorPtr->GetPosition();
+    joint_velocity_[2] = dof3SensorPtr->GetVelocity();
   }
   
   void BartenderHWInterface::write(ros::Duration& elapsed_time) {
     // ROS_INFO_NAMED("bartender_interface", "writing position:");
     // ROS_INFO_NAMED("bartender_interface", std::to_string(joint_position_command_[0]).c_str());
-    dof1MotorPtr->Set(ControlMode::Position, joint_position_command_[0] * (4096.0/360.0));
-    
     ctre::phoenix::unmanaged::FeedEnable(1000);
+    dof1MotorPtr->Set(ControlMode::Position, joint_position_command_[0] * (4096.0/360.0));
+	  double mass_x = 12 * cos (d2r(270 + joint_position_[1] - joint_position_[2])) + 19 * cos (d2r(90 + joint_position_[1]));
+	  double mass_y = 12 * sin (d2r(270 + joint_position_[1] - joint_position_[2])) + 19 * sin (d2r(90 + joint_position_[1]));
+	  double mass_angle = atan2(abs(mass_y), mass_x);
+	  double ff2 = kG2 * cos(mass_angle);
+    dof2MotorPtr->Set(ControlMode::Position, joint_position_command_[1] * (4096.0/360.0), DemandType::DemandType_ArbitraryFeedForward, ff2 + copysign(kS2, dof2MotorPtr->GetClosedLoopError()));
+    double ff3 = kG3 * sin(d2r(joint_position_[2]));
+    dof3MotorPtr->Set(ControlMode::Position, joint_position_command_[2] * (4096.0/360.0), DemandType::DemandType_ArbitraryFeedForward, ff3 + copysign(kS3, dof3MotorPtr->GetClosedLoopError()));
   }
   
   void BartenderHWInterface::enforceLimits(ros::Duration& period) {

@@ -12,6 +12,8 @@
 
   <node name="bartender_hardware_node" pkg="bartender_hardware_interface" type="bartender_control_loop" output="screen" ns="/bartender/control" />
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/bartender/control"
-    args="state position/dof1" />
-
+    args="state group/position/first3" />
+    
+  <!-- ctre enabler -->
+  <node name="ctre_enabler" pkg="bartender_hardware_interface" type="ctre_enabler" respawn="true" output="screen" />
 </launch>

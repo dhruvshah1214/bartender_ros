@@ -1,38 +1,41 @@
 state:
   type: joint_state_controller/JointStateController
   publish_rate: 50
-  
-position:
-  dof1:
-    type: position_controllers/JointPositionController
-    joint: Axis_1_joint
-    pid: {p: 0.0, i: 0.0, d: 0.0}
-  dof2:
-    type: position_controllers/JointPositionController
-    joint: Axis_2_joint
-    pid: {p: 0.0, i: 0.0, d: 0.0}
-  dof3:
-    type: position_controllers/JointPositionController
-    joint: Axis_3_joint
-    pid: {p: 0.0, i: 0.0, d: 0.0}
-  dof4:
-    type: position_controllers/JointPositionController
-    joint: Axis_4_joint
-    pid: {p: 0.0, i: 0.0, d: 0.0}
-  dof5:
-    type: position_controllers/JointPositionController
-    joint: Axis_5_joint
-    pid: {p: 0.0, i: 0.0, d: 0.0}
-  dof6:
-    type: position_controllers/JointPositionController
-    joint: Axis_6_joint
-    pid: {p: 0.0, i: 0.0, d: 0.0}  
-  group:
-    type: position_controllers/JointGroupPositionController
-    joints:
-      - dof1
-      - dof2
-      - dof3
-      - dof4
-      - dof5
-      - dof6
+
+dof:
+  position:
+    '1':
+      type: position_controllers/JointPositionController
+      joint: Axis_1_joint
+    '2':
+      type: position_controllers/JointPositionController
+      joint: Axis_2_joint
+    '3':
+      type: position_controllers/JointPositionController
+      joint: Axis_3_joint
+    '4':
+      type: position_controllers/JointPositionController
+      joint: Axis_4_joint
+    '5':
+      type: position_controllers/JointPositionController
+      joint: Axis_5_joint
+    '6':
+      type: position_controllers/JointPositionController
+      joint: Axis_6_joint
+group:
+  position:
+    first3:
+      type: position_controllers/JointGroupPositionController
+      joints:
+        - Axis_1_joint
+        - Axis_2_joint
+        - Axis_3_joint
+    arm_group:
+      type: position_controllers/JointGroupPositionController
+      joints:
+        - Axis_1_joint
+        - Axis_2_joint
+        - Axis_3_joint
+        - Axis_4_joint
+        - Axis_5_joint
+        - Axis_6_joint
