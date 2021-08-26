@@ -8,11 +8,15 @@
 
 #include <bartender_hardware_interface/bartender_interface.h>
 
+#include "ros/ros.h"
+#include <std_srvs/Empty.h>
+
 using namespace ctre::phoenix;
 using namespace ctre::phoenix::platform;
 using namespace ctre::phoenix::motorcontrol;
 using namespace ctre::phoenix::motorcontrol::can;
 using namespace ctre::phoenix::sensors;
+
 
 // const
 const std::string INTERFACE = "can0";
@@ -38,7 +42,11 @@ double kG3 = 0.0;
 #define d2r(degrees) degrees * M_PI / 180.0
 #define r2d(rad) rad * 180.0 / M_PI
 
- void init_ctre() {
+// enable
+
+bool enabled = true;
+
+void init_ctre() {
 
   /* actuators */
     
@@ -67,13 +75,13 @@ double kG3 = 0.0;
   	dof1MotorPtr->ConfigReverseSoftLimitEnable(true);
   	dof1MotorPtr->ConfigForwardSoftLimitThreshold(120.0 * (4096.0/360.0));
   	dof1MotorPtr->ConfigReverseSoftLimitThreshold(-120.0 * (4096.0/360.0));
-  	dof1MotorPtr->ConfigClosedloopRamp(0.3);
+  	dof1MotorPtr->ConfigClosedloopRamp(1.2);
   	dof1MotorPtr->ConfigAllowableClosedloopError(0, 7);
-  	dof1MotorPtr->Config_kP(0, 0.5);
-  	dof1MotorPtr->Config_kD(0, 0.5);
-  	dof1MotorPtr->Config_kI(0, 0.003);
-  	dof1MotorPtr->Config_IntegralZone(0, 50.0);
-  	dof1MotorPtr->ConfigMaxIntegralAccumulator(0, 10000.0);
+  	dof1MotorPtr->Config_kP(0, 0.4);
+  	dof1MotorPtr->Config_kD(0, 1.2);
+  	dof1MotorPtr->Config_kI(0, 0.0052);
+  	dof1MotorPtr->Config_IntegralZone(0, 200.0);
+  	dof1MotorPtr->ConfigMaxIntegralAccumulator(0, 5000.0);
 
   	
   dof2MotorPtr->ConfigFactoryDefault();
@@ -91,10 +99,10 @@ double kG3 = 0.0;
   	dof2MotorPtr->ConfigForwardSoftLimitThreshold(45.0 * (4096.0/360.0));
   	dof2MotorPtr->ConfigReverseSoftLimitThreshold(-45.0 * (4096.0/360.0));
   	dof2MotorPtr->ConfigClosedloopRamp(0.8);
-  	dof2MotorPtr->ConfigAllowableClosedloopError(0, 7);
+  	dof2MotorPtr->ConfigAllowableClosedloopError(0, 10);
   dof2MotorPtr->Config_kP(0, 1.5);
-  dof2MotorPtr->Config_kD(0, 4.0);
- 	dof2MotorPtr->Config_kI(0, 0.01);
+  dof2MotorPtr->Config_kD(0, 5.0);
+ 	dof2MotorPtr->Config_kI(0, 0.008);
  	dof2MotorPtr->Config_IntegralZone(0, 100.0);
  	dof2MotorPtr->ConfigMaxIntegralAccumulator(0, 20000.0);
 
@@ -145,32 +153,30 @@ double kG3 = 0.0;
 	
 }
 
-void neutral() {
-  dof1MotorPtr->NeutralOutput();
-  dof2MotorPtr->NeutralOutput();  
-  dof3MotorPtr->NeutralOutput();
-  dof4MotorPtr->NeutralOutput();
-}
-
 namespace bartender_control {
-
-
-
   BartenderHWInterface::BartenderHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model) : ros_control_boilerplate::GenericHWInterface(nh, urdf_model) {
-    ROS_INFO_NAMED("bartender_interface", "hw interface ready");
+    serviceNeutral = nh.advertiseService("neutral", &bartender_control::BartenderHWInterface::neutral, this);
+    serviceEnable = nh.advertiseService("enable", &bartender_control::BartenderHWInterface::enable, this);
+    enabled = false;
+    
     ctre::phoenix::platform::can::SetCANInterface(INTERFACE.c_str());
     init_ctre();
     
     kS3 = 0.04;
     kG3 = 0.05;
-    kS2 = 0.02;
+    kS2 = 0.01;
     kG2 = 0.20;
+  }
+  
+  void BartenderHWInterface::init() {
+    ros_control_boilerplate::GenericHWInterface::init();
+    ROS_INFO_NAMED("bartender_interface", "hw interface ready");
     
     joint_position_command_[0] = 0.0;
     joint_position_command_[1] = 0.0;
     joint_position_command_[2] = 60.0;
     
-    ros::ServiceServer service = *nh.advertiseService("neutral_output", neutral);
+    enabled = false;
   }
   
   void BartenderHWInterface::read(ros::Duration& elapsed_time) {
@@ -189,18 +195,37 @@ namespace bartender_control {
   void BartenderHWInterface::write(ros::Duration& elapsed_time) {
     // ROS_INFO_NAMED("bartender_interface", "writing position:");
     // ROS_INFO_NAMED("bartender_interface", std::to_string(joint_position_command_[0]).c_str());
-    ctre::phoenix::unmanaged::FeedEnable(1000);
-    dof1MotorPtr->Set(ControlMode::Position, joint_position_command_[0] * (4096.0/360.0));
-	  double mass_x = 12 * cos (d2r(270 + joint_position_[1] - joint_position_[2])) + 19 * cos (d2r(90 + joint_position_[1]));
-	  double mass_y = 12 * sin (d2r(270 + joint_position_[1] - joint_position_[2])) + 19 * sin (d2r(90 + joint_position_[1]));
-	  double mass_angle = atan2(abs(mass_y), mass_x);
-	  double ff2 = kG2 * cos(mass_angle);
-    dof2MotorPtr->Set(ControlMode::Position, joint_position_command_[1] * (4096.0/360.0), DemandType::DemandType_ArbitraryFeedForward, ff2 + copysign(kS2, dof2MotorPtr->GetClosedLoopError()));
-    double ff3 = kG3 * sin(d2r(joint_position_[2]));
-    dof3MotorPtr->Set(ControlMode::Position, joint_position_command_[2] * (4096.0/360.0), DemandType::DemandType_ArbitraryFeedForward, ff3 + copysign(kS3, dof3MotorPtr->GetClosedLoopError()));
+    if (enabled) {
+      ctre::phoenix::unmanaged::FeedEnable(1000);
+      dof1MotorPtr->Set(ControlMode::Position, joint_position_command_[0] * (4096.0/360.0));
+	    double mass_x = 12 * cos (d2r(270 + joint_position_[1] - joint_position_[2])) + 19 * cos (d2r(90 + joint_position_[1]));
+	    double mass_y = 12 * sin (d2r(270 + joint_position_[1] - joint_position_[2])) + 19 * sin (d2r(90 + joint_position_[1]));
+	    double mass_angle = atan2(abs(mass_y), mass_x);
+	    double ff2 = kG2 * cos(mass_angle);
+      dof2MotorPtr->Set(ControlMode::Position, joint_position_command_[1] * (4096.0/360.0), DemandType::DemandType_ArbitraryFeedForward, ff2 + copysign(kS2, dof2MotorPtr->GetClosedLoopError()));
+      double ff3 = kG3 * sin(d2r(joint_position_[2]));
+      dof3MotorPtr->Set(ControlMode::Position, joint_position_command_[2] * (4096.0/360.0), DemandType::DemandType_ArbitraryFeedForward, ff3 + copysign(kS3, dof3MotorPtr->GetClosedLoopError()));
+    }
+    
   }
   
   void BartenderHWInterface::enforceLimits(ros::Duration& period) {
+  }
+  
+  bool BartenderHWInterface::neutral(std_srvs::Empty::Request &req,
+                                     std_srvs::Empty::Response &res) {
+  dof1MotorPtr->NeutralOutput();
+  dof2MotorPtr->NeutralOutput();  
+  dof3MotorPtr->NeutralOutput();
+
+  enabled = false;
+  return true;
+}
+
+  bool BartenderHWInterface::enable(std_srvs::Empty::Request &req,
+                                    std_srvs::Empty::Response &res) {
+    enabled = true;
+    return true;
   }
   
 }
