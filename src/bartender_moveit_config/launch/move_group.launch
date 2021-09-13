@@ -54,20 +54,17 @@
   <!-- Trajectory Execution Functionality -->
   <include ns="move_group" file="$(find bartender_moveit_config)/launch/trajectory_execution.launch.xml" if="$(arg allow_trajectory_execution)">
     <arg name="moveit_manage_controllers" value="true" />
-    <arg name="moveit_controller_manager" value="bartender_description" unless="$(arg fake_execution)"/>
+    <arg name="moveit_controller_manager" value="bartender" unless="$(arg fake_execution)"/>
     <arg name="moveit_controller_manager" value="fake" if="$(arg fake_execution)"/>
     <arg name="execution_type" value="$(arg execution_type)" />
-  </include>
-
-  <!-- Sensors Functionality -->
-  <include ns="move_group" file="$(find bartender_moveit_config)/launch/sensor_manager.launch.xml" if="$(arg allow_trajectory_execution)">
-    <arg name="moveit_sensor_manager" value="bartender_description" />
   </include>
 
   <!-- Start the actual move_group node/action server -->
   <node name="move_group" launch-prefix="$(arg launch_prefix)" pkg="moveit_ros_move_group" type="move_group" respawn="false" output="screen" args="$(arg command_args)">
     <!-- Set the display variable, in case OpenGL code is used internally -->
     <env name="DISPLAY" value="$(optenv DISPLAY :0)" />
+    
+    <remap from="joint_states" to="bartender/control/joint_states" />
 
     <param name="allow_trajectory_execution" value="$(arg allow_trajectory_execution)"/>
     <param name="max_safe_path_cost" value="$(arg max_safe_path_cost)"/>

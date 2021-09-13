@@ -30,7 +30,7 @@ group:
         - Axis_1_joint
         - Axis_2_joint
         - Axis_3_joint
-    arm_group:
+    arm:
       type: position_controllers/JointGroupPositionController
       joints:
         - Axis_1_joint
@@ -39,3 +39,13 @@ group:
         - Axis_4_joint
         - Axis_5_joint
         - Axis_6_joint
+trajectory:
+  arm:
+    type: position_controllers/JointTrajectoryController
+    joints:
+      - Axis_1_joint
+      - Axis_2_joint
+      - Axis_3_joint
+      - Axis_4_joint
+      - Axis_5_joint
+      - Axis_6_joint

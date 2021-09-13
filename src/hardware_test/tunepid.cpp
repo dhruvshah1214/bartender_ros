@@ -29,15 +29,15 @@ using namespace std;
 const std::string INTERFACE = "can0";
 
 /* actuators */
-TalonSRX dof1Motor(11);
-TalonSRX dof2Motor(12);
-TalonSRX dof3Motor(13);
-TalonSRX dof4Motor(14);
+TalonSRX *dof1MotorPtr;
+TalonSRX *dof2MotorPtr;
+TalonSRX *dof3MotorPtr;
+TalonSRX *dof4MotorPtr;
 
 /* encoders */
-CANCoder dof1Sensor(21);
-CANCoder dof2Sensor(22);
-CANCoder dof3Sensor(23);
+CANCoder *dof1SensorPtr;
+CANCoder *dof2SensorPtr;
+CANCoder *dof3SensorPtr;
 
 // motor thread lock for FF
 std::mutex motorMtx;
@@ -66,84 +66,109 @@ double r2d(double rad) {
 
 void init()
 {
-	// talons
+	/* actuators */
+    
+    // talons
+    dof1MotorPtr = new TalonSRX(11);
+    dof2MotorPtr = new TalonSRX(12);
+    dof3MotorPtr = new TalonSRX(13);
+  
+    /* encoders */
+    dof1SensorPtr = new CANCoder(21);
+    dof2SensorPtr = new CANCoder(22);
+    dof3SensorPtr = new CANCoder(23);
+  	
+  
+  	dof1MotorPtr->ConfigFactoryDefault();
+  	dof1MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Coast);	
+  	dof1MotorPtr->SetInverted(true);
+  	dof1MotorPtr->ConfigRemoteFeedbackFilter(*dof1SensorPtr, 0);
+  	dof1MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
+  	dof1MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
+  	dof1MotorPtr->ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
+  	dof1MotorPtr->ConfigNeutralDeadband(0.01);
+  	dof1MotorPtr->ConfigPeakOutputForward(0.4);
+  	dof1MotorPtr->ConfigPeakOutputReverse(-0.4);
+  	dof1MotorPtr->ConfigForwardSoftLimitEnable(true);
+  	dof1MotorPtr->ConfigReverseSoftLimitEnable(true);
+  	dof1MotorPtr->ConfigForwardSoftLimitThreshold(120.0 * (4096.0/360.0));
+  	dof1MotorPtr->ConfigReverseSoftLimitThreshold(-120.0 * (4096.0/360.0));
+  	dof1MotorPtr->ConfigClosedloopRamp(0.75);
+  	dof1MotorPtr->ConfigAllowableClosedloopError(0, 7);
+  	dof1MotorPtr->Config_kP(0, 1);
+    dof1MotorPtr->Config_kD(0, 5);
+  	double dof1_kI = 0.002;
+  	dof1MotorPtr->Config_kI(0, dof1_kI);
+  	dof1MotorPtr->Config_IntegralZone(0, 200.0);
+  	dof1MotorPtr->ConfigMaxIntegralAccumulator(0, 1023.0 / (10.0 * dof1_kI)); // max 10% driven by I term
 
+  	
+    dof2MotorPtr->ConfigFactoryDefault();
+    dof2MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Brake);	
+    dof2MotorPtr->SetInverted(false);
+  	dof2MotorPtr->ConfigRemoteFeedbackFilter(*dof2SensorPtr, 0);
+    dof2MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Sum0, FeedbackDevice::RemoteSensor0);
+    dof2MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Sum1, FeedbackDevice::None);
+  	dof2MotorPtr->ConfigSelectedFeedbackSensor(FeedbackDevice::SensorSum, 0);
+    dof2MotorPtr->ConfigNeutralDeadband(0.01);
+    dof2MotorPtr->ConfigPeakOutputForward(0.7);
+    dof2MotorPtr->ConfigPeakOutputReverse(-0.7);
+    dof2MotorPtr->ConfigForwardSoftLimitEnable(true);
+  	dof2MotorPtr->ConfigReverseSoftLimitEnable(true);
+  	dof2MotorPtr->ConfigForwardSoftLimitThreshold(45.0 * (4096.0/360.0));
+  	dof2MotorPtr->ConfigReverseSoftLimitThreshold(-45.0 * (4096.0/360.0));
+  	dof2MotorPtr->ConfigClosedloopRamp(1.2);
+  	dof2MotorPtr->ConfigAllowableClosedloopError(0, 10);
+    dof2MotorPtr->Config_kP(0, 1.0);
+    dof2MotorPtr->Config_kD(0, 20.0);
+ 	dof2MotorPtr->Config_kI(0, 0.006);
+ 	dof2MotorPtr->Config_IntegralZone(0, 250.0);
+ 	dof2MotorPtr->ConfigMaxIntegralAccumulator(0, 20000.0);
+
+    dof3MotorPtr->ConfigFactoryDefault();
+  	dof3MotorPtr->SetNeutralMode(motorcontrol::NeutralMode::Brake);	
+ 	dof3MotorPtr->SetInverted(true);
+ 	dof3MotorPtr->ConfigRemoteFeedbackFilter(*dof3SensorPtr, 0);
+ 	dof3MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
+ 	dof3MotorPtr->ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
+ 	dof3MotorPtr->ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
+  	dof3MotorPtr->ConfigNeutralDeadband(0.01);
+  	dof3MotorPtr->ConfigPeakOutputForward(0.6);
+  	dof3MotorPtr->ConfigPeakOutputReverse(-0.6);
+  	dof3MotorPtr->ConfigForwardSoftLimitEnable(true);
+  	dof3MotorPtr->ConfigReverseSoftLimitEnable(true);
+  	dof3MotorPtr->ConfigForwardSoftLimitThreshold(150.0 * (4096.0/360.0));
+  	dof3MotorPtr->ConfigReverseSoftLimitThreshold(60.0 * (4096.0/360.0));
+  	dof3MotorPtr->ConfigClosedloopRamp(0.35);
+  	dof3MotorPtr->ConfigAllowableClosedloopError(0, 10.0);
+  	dof3MotorPtr->Config_kP(0, 1.5);
+  	dof3MotorPtr->Config_kD(0, 4.0);
+  	dof3MotorPtr->Config_kI(0, 0.01);
+  	dof3MotorPtr->Config_IntegralZone(0, 250.0);
+  	dof3MotorPtr->ConfigMaxIntegralAccumulator(0, 20000.0);
 	
-	dof1Motor.ConfigFactoryDefault();
-	dof1Motor.SetNeutralMode(motorcontrol::NeutralMode::Coast);	
-	dof1Motor.SetInverted(true);
-	dof1Motor.ConfigRemoteFeedbackFilter(dof1Sensor, 0);
-	dof1Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
-	dof1Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
-	dof1Motor.ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
-	dof1Motor.ConfigPeakOutputForward(0.4);
-	dof1Motor.ConfigPeakOutputReverse(-0.4);
-	dof1Motor.ConfigForwardSoftLimitEnable(true);
-	dof1Motor.ConfigReverseSoftLimitEnable(true);
-	dof1Motor.ConfigForwardSoftLimitThreshold(120.0 * (4096.0/360.0));
-	dof1Motor.ConfigReverseSoftLimitThreshold(-120.0 * (4096.0/360.0));
-	dof1Motor.ConfigMotionCruiseVelocity(75.0);
-	dof1Motor.ConfigMotionAcceleration(225.0);
-	dof1Motor.ConfigMotionSCurveStrength(4);
-	dof1Motor.Config_kP(0, 0.5);
+  	// sensors
+  	
+    dof1SensorPtr->ConfigFactoryDefault();
+    dof1SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
+    dof1SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
+    dof1SensorPtr->ConfigMagnetOffset(152.8418);
+    dof1SensorPtr->ConfigSensorDirection(false);
+    dof1SensorPtr->SetPositionToAbsolute();
+  	
+    dof2SensorPtr->ConfigFactoryDefault();
+    dof2SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
+	dof2SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
+	dof2SensorPtr->ConfigMagnetOffset(-54.32);
+	dof2SensorPtr->ConfigSensorDirection(true);
+	dof2SensorPtr->SetPositionToAbsolute();
 
-	dof2Motor.ConfigFactoryDefault();
-	dof2Motor.SetNeutralMode(motorcontrol::NeutralMode::Brake);	
-	dof2Motor.SetInverted(false);
-	dof2Motor.ConfigRemoteFeedbackFilter(dof2Sensor, 0);
-	dof2Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Sum0, FeedbackDevice::RemoteSensor0);
-	dof2Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Sum1, FeedbackDevice::None);
-	dof2Motor.ConfigSelectedFeedbackSensor(FeedbackDevice::SensorSum, 0);
-	dof2Motor.ConfigPeakOutputForward(0.7);
-	dof2Motor.ConfigPeakOutputReverse(-0.7);
-	dof2Motor.ConfigForwardSoftLimitEnable(true);
-	dof2Motor.ConfigReverseSoftLimitEnable(true);
-	dof2Motor.ConfigForwardSoftLimitThreshold(45.0 * (4096.0/360.0));
-	dof2Motor.ConfigReverseSoftLimitThreshold(-45.0 * (4096.0/360.0));
-	dof2Motor.ConfigMotionCruiseVelocity(75.0);
-	dof2Motor.ConfigMotionAcceleration(225.0);
-	dof2Motor.ConfigMotionSCurveStrength(4);
-	// dof2Motor.Config_kP(0, 0.5);
-
-	dof3Motor.ConfigFactoryDefault();
-	dof3Motor.SetNeutralMode(motorcontrol::NeutralMode::Brake);	
-	dof3Motor.SetInverted(true);
-	dof3Motor.ConfigRemoteFeedbackFilter(dof3Sensor, 0);
-	dof3Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Diff0, FeedbackDevice::None);
-	dof3Motor.ConfigSensorTerm(SensorTerm::SensorTerm_Diff1, FeedbackDevice::RemoteSensor0);
-	dof3Motor.ConfigSelectedFeedbackSensor(FeedbackDevice::SensorDifference, 0);
-	dof3Motor.ConfigPeakOutputForward(0.6);
-	dof3Motor.ConfigPeakOutputReverse(-0.6);
-	dof3Motor.ConfigForwardSoftLimitEnable(true);
-	dof3Motor.ConfigReverseSoftLimitEnable(true);
-	dof3Motor.ConfigForwardSoftLimitThreshold(150.0 * (4096.0/360.0));
-	dof3Motor.ConfigReverseSoftLimitThreshold(60.0 * (4096.0/360.0));
-	dof3Motor.ConfigMotionCruiseVelocity(75.0);
-	dof3Motor.ConfigMotionAcceleration(225.0);
-	dof3Motor.ConfigMotionSCurveStrength(4);
-	
-	// sensors
-	
-	dof1Sensor.ConfigFactoryDefault();
-	dof1Sensor.ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
-	dof1Sensor.ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
-	dof1Sensor.ConfigMagnetOffset(-57);
-	dof1Sensor.ConfigSensorDirection(false);
-	dof1Sensor.SetPositionToAbsolute();
-
-	dof2Sensor.ConfigFactoryDefault();
-	dof2Sensor.ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
-	dof2Sensor.ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
-	dof2Sensor.ConfigMagnetOffset(184.482);
-	dof2Sensor.ConfigSensorDirection(true);
-	dof2Sensor.SetPositionToAbsolute();
-
-	dof3Sensor.ConfigFactoryDefault();
-	dof3Sensor.ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
-	dof3Sensor.ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
-	dof3Sensor.ConfigMagnetOffset(-25.3);
-	dof3Sensor.ConfigSensorDirection(false);
-	dof3Sensor.SetPositionToAbsolute();
+	dof3SensorPtr->ConfigFactoryDefault();
+	dof3SensorPtr->ConfigSensorInitializationStrategy(SensorInitializationStrategy::BootToAbsolutePosition);
+	dof3SensorPtr->ConfigAbsoluteSensorRange(AbsoluteSensorRange::Signed_PlusMinus180);
+	dof3SensorPtr->ConfigMagnetOffset(92.256);
+	dof3SensorPtr->ConfigSensorDirection(false);
+    dof3SensorPtr->SetPositionToAbsolute();
 }
 
 int main() {
@@ -155,44 +180,45 @@ int main() {
 	/* init */
 	init();
 	
-	kG3 = 0.0;
-	kG2 = 0.0;
+	kG2 = 0.2;
+	kG3 = 0.05;
 	printCurrent = false;
-	kS2 = 0.0;
-	kS3 = 0.0;
+	kS2 = 0.01;
+	kS3 = 0.04;
 	
 	std::thread([&] {
 	    while(true) {
 	        ctre::phoenix::unmanaged::FeedEnable(1000);
 	        motorMtx.lock();
 	        // add dof 3 FF
-	        if (dof3Motor.GetControlMode() == ControlMode::Position) {
-	            double tgt = dof3Motor.GetClosedLoopTarget();
-	            double ff = kG3 * sin(d2r(dof3Sensor.GetPosition()));
+	        if (dof3MotorPtr->GetControlMode() == ControlMode::Position) {
+	            double tgt = dof3MotorPtr->GetClosedLoopTarget();
+	            double ff = kG3 * sin(d2r(dof3SensorPtr->GetPosition()));
 	            // cout << "pos tgt: " << fixed << tgt << " arb FF: " << fixed << ff << endl;
-	            dof3Motor.Set(ControlMode::Position, tgt, DemandType::DemandType_ArbitraryFeedForward, ff + copysign(kS3, dof3Motor.GetClosedLoopError()));
+	            dof3MotorPtr->Set(ControlMode::Position, tgt, DemandType::DemandType_ArbitraryFeedForward, ff + copysign(kS3, dof3MotorPtr->GetClosedLoopError()));
 	        }
 	        // add dof 2 FF
-	        if (dof2Motor.GetControlMode() == ControlMode::Position) {
-	            double tgt = dof2Motor.GetClosedLoopTarget();
-	            double q1 = 90 + dof2Sensor.GetPosition();
-	            double q2 = 180 - dof3Sensor.GetPosition();
+	        if (dof2MotorPtr->GetControlMode() == ControlMode::Position) {
+	            double tgt = dof2MotorPtr->GetClosedLoopTarget();
+	            double q1 = 90 + dof2SensorPtr->GetPosition();
+	            double q2 = 180 - dof3SensorPtr->GetPosition();
 	            double mass_x = 12 * cos (d2r(q1 + q2)) + 19 * cos (d2r(q1));
 	            double mass_y = 12 * sin (d2r(q1 + q2)) + 19 * sin (d2r(q1));
 	            double mass_angle = atan2(abs(mass_y), mass_x);
-	            double ff = kG2 * cos(mass_angle);
+	            double mass_dist = sqrt(mass_x * mass_x + mass_y * mass_y);
+	            double ff = kG2 * (mass_dist/31.0) * cos(mass_angle) + /* point mass ratio 1:2 */ 0.1 * kG2 * cos(d2r(q1));
 	            // cout << "pos tgt: " << fixed << tgt << " arb FF: " << fixed << ff << endl;
-	            dof2Motor.Set(ControlMode::Position, tgt, DemandType::DemandType_ArbitraryFeedForward, ff + copysign(kS2, dof2Motor.GetClosedLoopError()));
+	            dof2MotorPtr->Set(ControlMode::Position, tgt, DemandType::DemandType_ArbitraryFeedForward, ff + copysign(kS2, dof2MotorPtr->GetClosedLoopError()));
 	        }
 	        if (printCurrent) {
-	            cout << "dof3 current is " << fixed << dof3Motor.GetStatorCurrent() * 1000.0 << " mA" << endl;
+	            cout << "dof3 current is " << fixed << dof3MotorPtr->GetStatorCurrent() * 1000.0 << " mA" << endl;
 	        }
 	        motorMtx.unlock();
 	        std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	    }
 	}).detach();
 	
-	TalonSRX* motor = &dof2Motor;
+	TalonSRX* motor = dof2MotorPtr;
     cout << "selecting dof 2" << endl;
 	while(true) {
         std::string line;
@@ -201,37 +227,32 @@ int main() {
         double param;
         stringstream(line) >> cmd >> param;
         motorMtx.lock();
+        cout.precision(2);
         if (cmd == "dof") {
             int dof = (int) param;
             cout << "selecting dof " << dof << endl;
             switch (dof) {
             case 1:
-                motor = &dof1Motor;
+                motor = dof1MotorPtr;
                 break;
             case 2:
-                motor = &dof2Motor;
+                motor = dof2MotorPtr;
                 break;
             case 3:
-                motor = &dof3Motor;
+                motor = dof3MotorPtr;
                 break;
             case 4:
-                motor = &dof4Motor;
+                motor = dof4MotorPtr;
                 break;
             default:
                 break;
             }
         }
         else if (cmd == "coast") {
-	        dof1Motor.SetNeutralMode(motorcontrol::NeutralMode::Coast);
-	        dof2Motor.SetNeutralMode(motorcontrol::NeutralMode::Coast);	
-	        dof3Motor.SetNeutralMode(motorcontrol::NeutralMode::Coast);	
-            dof4Motor.SetNeutralMode(motorcontrol::NeutralMode::Coast);	
+	        motor->SetNeutralMode(motorcontrol::NeutralMode::Coast);
         }
         else if (cmd == "brake") {
-	        dof1Motor.SetNeutralMode(motorcontrol::NeutralMode::Brake);
-	        dof2Motor.SetNeutralMode(motorcontrol::NeutralMode::Brake);	
-	        dof3Motor.SetNeutralMode(motorcontrol::NeutralMode::Brake);	
-            dof4Motor.SetNeutralMode(motorcontrol::NeutralMode::Brake);	
+	        motor->SetNeutralMode(motorcontrol::NeutralMode::Brake);	
         }
         else if(cmd == "getp") {
             ctre::phoenix::motorcontrol::can::SlotConfiguration c;
@@ -246,6 +267,7 @@ int main() {
         else if (cmd == "geti") {
             ctre::phoenix::motorcontrol::can::SlotConfiguration c;
             motor->GetSlotConfigs(c);
+            cout.precision(5);
             cout << "i is " << c.kI << endl;
         }
         else if (cmd == "seti") {
@@ -331,6 +353,10 @@ int main() {
             double runit = ((double) param) * 4096.0/360.0;
             cout << "commanding position of " << param << " degrees, raw units " << std::fixed << runit << endl;
             motor->Set(ControlMode::Position, runit);
+        }
+        else if (cmd == "getpos") {
+            // get pos
+            cout << "position is " << std::fixed << 360.0/4096.0 * motor->GetSelectedSensorPosition() << " degrees" << endl;
         }
         else if (cmd == "cur") {
             // cmd pos
